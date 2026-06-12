@@ -46,7 +46,7 @@ jobs:
       # cache: npm → caches node_modules between runs so npm ci is faster
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24   # LTS — GitHub Actions requires Node 24+ from June 16 2026
           cache: npm
 
       # Step 3: Install dependencies from the lockfile
