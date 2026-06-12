@@ -1,0 +1,47 @@
+{
+  "name": "electron-todo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A Todo desktop app built with Electron + React — Samvyo training project",
+  "main": "electron/main.js",
+  "author": {
+    "name": "Samvyo Technologies",
+    "email": "tech-team-2@samvyo.com"
+  },
+  "homepage": "https://github.com/sai-prasad05/electron-todo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sai-prasad05/electron-todo.git"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && ELECTRON_IS_DEV=1 electron .\"",
+    "electron:preview": "npm run build && electron .",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9",
+    "electron-window-state": "^5.0.3",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^10.0.3",
+    "electron": "^28.3.3",
+    "electron-builder": "^26.15.2",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "vite": "^8.0.12",
+    "wait-on": "^9.0.10"
+  }
+}
