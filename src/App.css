@@ -1,0 +1,138 @@
+/* ── Reset & base ─────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f0f2f5;
+  color: #333;
+}
+
+/* ── App shell ────────────────────────────────────────────────────────────── */
+/* Full-height column that fills the Electron window */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* ── Update banner (Day 5) ────────────────────────────────────────────────── */
+/* Shown at the top when electron-updater has a new version downloaded */
+.update-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #4f46e5;
+  color: white;
+  padding: 10px 16px;
+  font-size: 14px;
+}
+.update-banner button {
+  background: white;
+  color: #4f46e5;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+.app-header {
+  padding: 32px 0 16px;
+  text-align: center;
+}
+.app-header h1 { font-size: 2rem; font-weight: 700; color: #4f46e5; }
+
+/* ── Todo input bar ───────────────────────────────────────────────────────── */
+.todo-input { display: flex; gap: 8px; margin-bottom: 16px; }
+.todo-input input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.todo-input input:focus { border-color: #4f46e5; }
+.todo-input button {
+  padding: 12px 20px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.todo-input button:hover { background: #4338ca; }
+
+/* ── Filter tabs ──────────────────────────────────────────────────────────── */
+.filters { display: flex; gap: 6px; margin-bottom: 12px; }
+.filters button {
+  padding: 6px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 20px;
+  background: white;
+  color: #64748b;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.filters button.active { background: #4f46e5; border-color: #4f46e5; color: white; }
+
+/* ── Todo list card ───────────────────────────────────────────────────────── */
+.todo-list {
+  list-style: none;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ── Individual todo row ──────────────────────────────────────────────────── */
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.1s;
+}
+.todo-item:last-child { border-bottom: none; }
+.todo-item:hover { background: #fafafa; }
+.todo-item input[type="checkbox"] {
+  width: 18px; height: 18px;
+  accent-color: #4f46e5;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.todo-item .todo-title { flex: 1; font-size: 15px; }
+
+/* Strikethrough when the todo is marked complete */
+.todo-item.completed .todo-title { text-decoration: line-through; color: #94a3b8; }
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.delete-btn:hover { color: #ef4444; }
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+.empty { text-align: center; color: #94a3b8; padding: 40px 0; font-size: 15px; }
+
+/* ── Item count ───────────────────────────────────────────────────────────── */
+.count { margin-top: 10px; font-size: 13px; color: #94a3b8; text-align: right; }
+
+/* ── App version footer ───────────────────────────────────────────────────── */
+/* Shows "web" in browser, real semver when running inside Electron */
+.app-footer { margin-top: auto; padding: 16px 0; text-align: center; font-size: 12px; color: #cbd5e1; }
