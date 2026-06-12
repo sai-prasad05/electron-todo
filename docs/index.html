@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Electron Todo — Download</title>
+  <style>
+    /* ── Reset & base ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --indigo:     #6366f1;
+      --indigo-dark:#4f46e5;
+      --indigo-light:#e0e7ff;
+      --text:       #1e1b4b;
+      --muted:      #6b7280;
+      --bg:         #f8fafc;
+      --card:       #ffffff;
+      --border:     #e2e8f0;
+      --win-color:  #0078d4;
+      --mac-color:  #555555;
+      --linux-color:#e95420;
+      --radius:     12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ───────────────────────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, var(--indigo-dark) 0%, var(--indigo) 100%);
+      color: white;
+      text-align: center;
+      padding: 64px 24px 48px;
+    }
+
+    .app-icon {
+      width: 96px;
+      height: 96px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(4px);
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+    }
+
+    header p {
+      font-size: 1.15rem;
+      opacity: 0.85;
+      max-width: 480px;
+      margin: 0 auto 20px;
+      line-height: 1.6;
+    }
+
+    .version-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 999px;
+      padding: 4px 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    /* ── Main content ─────────────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 48px 24px;
+      width: 100%;
+    }
+
+    /* ── OS detection banner ─────────────────────────────────────────────── */
+    #os-banner {
+      background: var(--indigo-light);
+      border: 1px solid var(--indigo);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      margin-bottom: 32px;
+      font-size: 0.95rem;
+      color: var(--indigo-dark);
+      display: none; /* shown by JS once OS is detected */
+    }
+
+    /* ── Download cards ───────────────────────────────────────────────────── */
+    .platforms {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 48px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+
+    /* Highlighted card for detected OS */
+    .card.detected {
+      border-color: var(--indigo);
+      box-shadow: 0 0 0 4px var(--indigo-light);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .platform-icon {
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .platform-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .platform-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .card-desc {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    /* Download buttons */
+    .download-btn {
+      display: block;
+      text-align: center;
+      padding: 11px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.15s, transform 0.1s;
+      color: white;
+    }
+
+    .download-btn:hover { opacity: 0.88; transform: scale(1.02); }
+    .download-btn:active { transform: scale(0.98); }
+
+    .btn-win   { background: var(--win-color); }
+    .btn-mac   { background: var(--mac-color); }
+    .btn-linux { background: var(--linux-color); }
+
+    .download-btn.secondary {
+      background: transparent;
+      border: 2px solid currentColor;
+      font-size: 0.82rem;
+      padding: 8px 16px;
+    }
+
+    .btn-win.secondary   { color: var(--win-color); }
+    .btn-mac.secondary   { color: var(--mac-color); }
+    .btn-linux.secondary { color: var(--linux-color); }
+
+    /* Loading state */
+    .download-btn.loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    /* ── Install notes ────────────────────────────────────────────────────── */
+    .notes {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 32px;
+    }
+
+    .notes h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 18px;
+      color: var(--text);
+    }
+
+    .note-item {
+      display: flex;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .note-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .note-item:first-of-type { padding-top: 0; }
+
+    .note-os {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center;
+    }
+
+    .note-text {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .note-text strong { color: var(--text); }
+
+    code {
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1px 6px;
+      font-size: 0.85em;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: var(--indigo-dark);
+    }
+
+    /* ── Footer ───────────────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 28px 24px;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    footer a {
+      color: var(--indigo);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ───────────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      header h1    { font-size: 1.8rem; }
+      header p     { font-size: 1rem; }
+      .platforms   { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header>
+  <div class="app-icon">✅</div>
+  <h1>Electron Todo</h1>
+  <p>A cross-platform desktop todo app built with Electron + React.<br>Works on Windows, macOS, and Linux.</p>
+  <span class="version-badge" id="version-badge">Loading latest version…</span>
+</header>
+
+<!-- ── Main ────────────────────────────────────────────────────────────────── -->
+<main>
+
+  <!-- OS detection hint -->
+  <div id="os-banner"></div>
+
+  <!-- Platform download cards -->
+  <div class="platforms">
+
+    <!-- Windows -->
+    <div class="card" id="card-win">
+      <div class="card-header">
+        <span class="platform-icon">🪟</span>
+        <div>
+          <div class="platform-name">Windows</div>
+          <div class="platform-sub">Windows 10 / 11 · x64</div>
+        </div>
+      </div>
+      <p class="card-desc">Standard installer with setup wizard. Creates Start Menu and desktop shortcuts.</p>
+      <a href="#" class="download-btn btn-win loading" id="btn-win-installer">
+        ⬇ Download Installer (.exe)
+      </a>
+      <a href="#" class="download-btn btn-win secondary loading" id="btn-win-portable">
+        Portable .exe (no install)
+      </a>
+    </div>
+
+    <!-- macOS -->
+    <div class="card" id="card-mac">
+      <div class="card-header">
+        <span class="platform-icon">🍎</span>
+        <div>
+          <div class="platform-name">macOS</div>
+          <div class="platform-sub">Apple Silicon (M1/M2/M3) · arm64</div>
+        </div>
+      </div>
+      <p class="card-desc">Disk image — open and drag to Applications. First launch needs one-time Gatekeeper bypass.</p>
+      <a href="#" class="download-btn btn-mac loading" id="btn-mac-dmg">
+        ⬇ Download (.dmg)
+      </a>
+    </div>
+
+    <!-- Linux -->
+    <div class="card" id="card-linux">
+      <div class="card-header">
+        <span class="platform-icon">🐧</span>
+        <div>
+          <div class="platform-name">Linux</div>
+          <div class="platform-sub">Ubuntu · Debian · Fedora · x64</div>
+        </div>
+      </div>
+      <p class="card-desc">AppImage runs on any distro without installing. .deb package for Ubuntu/Debian systems.</p>
+      <a href="#" class="download-btn btn-linux loading" id="btn-linux-appimage">
+        ⬇ Download AppImage
+      </a>
+      <a href="#" class="download-btn btn-linux secondary loading" id="btn-linux-deb">
+        .deb package (Ubuntu/Debian)
+      </a>
+    </div>
+
+  </div>
+
+  <!-- Installation notes -->
+  <div class="notes">
+    <h2>⚠️ First-launch notes</h2>
+
+    <div class="note-item">
+      <span class="note-os">🪟</span>
+      <div class="note-text">
+        <strong>Windows SmartScreen warning:</strong> Because this build is unsigned, Windows shows
+        "Windows protected your PC". Click <strong>More info → Run anyway</strong>.
+        This only appears once per machine.
+      </div>
+    </div>
+
+    <div class="note-item">
+      <span class="note-os">🍎</span>
+      <div class="note-text">
+        <strong>macOS Gatekeeper warning:</strong> Right-click the app → <strong>Open → Open</strong>.
+        Or run: <code>xattr -cr /Applications/Electron\ Todo.app</code> — then launch normally.
+        One-time only.
+      </div>
+    </div>
+
+    <div class="note-item">
+      <span class="note-os">🐧</span>
+      <div class="note-text">
+        <strong>Linux AppImage:</strong> Make executable first:
+        <code>chmod +x Electron-Todo-*.AppImage</code> then run it.
+        If you see a FUSE error: <code>sudo apt install libfuse2</code>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── Footer ──────────────────────────────────────────────────────────────── -->
+<footer>
+  <p>
+    Built by <strong>Samvyo Technologies</strong> ·
+    <a href="https://github.com/sai-prasad05/electron-todo" target="_blank">View source on GitHub</a> ·
+    <a href="https://github.com/sai-prasad05/electron-todo/releases" target="_blank">All releases</a>
+  </p>
+</footer>
+
+<script>
+  // ── Fetch latest release from GitHub API ───────────────────────────────────
+  // This runs in the user's browser when they open the page.
+  // It calls the GitHub public API (no auth needed for public repos) to find
+  // the latest release and its asset download URLs.
+  // This means the buttons ALWAYS point to the newest version automatically —
+  // no need to update this HTML file when you release v1.0.1, v1.0.2, etc.
+
+  const REPO = 'sai-prasad05/electron-todo';
+  const API  = `https://api.github.com/repos/${REPO}/releases/latest`;
+
+  fetch(API)
+    .then(r => r.json())
+    .then(release => {
+      // Update the version badge in the header
+      document.getElementById('version-badge').textContent = `Version ${release.tag_name}`;
+
+      // release.assets is an array of uploaded files.
+      // We find each platform's file by matching the filename pattern.
+      const assets = release.assets;
+
+      function findAsset(pattern) {
+        // pattern is a regex — returns the browser_download_url or '#' if not found
+        const asset = assets.find(a => pattern.test(a.name));
+        return asset ? asset.browser_download_url : '#';
+      }
+
+      // Wire up each button with the real download URL
+      // The regex patterns match the filenames electron-builder produces
+      setBtn('btn-win-installer', findAsset(/Setup.*\.exe$/));
+      setBtn('btn-win-portable',  findAsset(/(?<!Setup.*)\d+\.exe$/));
+      setBtn('btn-mac-dmg',       findAsset(/arm64\.dmg$/));
+      setBtn('btn-linux-appimage',findAsset(/\.AppImage$/));
+      setBtn('btn-linux-deb',     findAsset(/\.deb$/));
+    })
+    .catch(() => {
+      // API failed — fall back to the releases page so users can still download
+      document.getElementById('version-badge').textContent = 'Latest version';
+      ['btn-win-installer','btn-win-portable','btn-mac-dmg','btn-linux-appimage','btn-linux-deb']
+        .forEach(id => setBtn(id, `https://github.com/${REPO}/releases/latest`));
+    });
+
+  function setBtn(id, url) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.href = url;
+    el.classList.remove('loading');
+  }
+
+  // ── OS detection — highlight the right card ────────────────────────────────
+  // navigator.userAgentData is the modern API; navigator.userAgent is the fallback.
+  // We use this to highlight the card matching the user's OS and show a hint banner.
+
+  const ua = navigator.userAgent;
+  let detectedOS = null;
+
+  if (/Windows/i.test(ua))      detectedOS = 'win';
+  else if (/Mac|iPhone|iPad/i.test(ua)) detectedOS = 'mac';
+  else if (/Linux/i.test(ua))   detectedOS = 'linux';
+
+  if (detectedOS) {
+    // Highlight the matching card
+    const card = document.getElementById(`card-${detectedOS}`);
+    if (card) card.classList.add('detected');
+
+    // Show the banner
+    const banner = document.getElementById('os-banner');
+    const names = { win: 'Windows', mac: 'macOS', linux: 'Linux' };
+    banner.textContent = `✓ We detected ${names[detectedOS]} — the recommended download is highlighted below.`;
+    banner.style.display = 'block';
+  }
+</script>
+
+</body>
+</html>
