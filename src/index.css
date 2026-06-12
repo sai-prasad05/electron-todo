@@ -1,0 +1,3 @@
+/* Global reset — keeps browser defaults from interfering with our layout */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; }
