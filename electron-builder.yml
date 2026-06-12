@@ -1,0 +1,88 @@
+# electron-builder.yml — packaging config for all three platforms
+#
+# HOW ELECTRON-BUILDER WORKS:
+#   1. It reads this file to know what to package and how.
+#   2. It takes the files listed under `files` and bundles them with the
+#      Electron runtime (a copy of Chromium + Node.js) into a self-contained app.
+#   3. Output goes to the `release/` folder.
+#   4. The `publish` block tells it to upload to GitHub Releases when
+#      --publish always is passed (used in our CI/CD workflow).
+
+# ─── App identity ────────────────────────────────────────────────────────────
+appId: com.samvyo.electrontodo
+# appId is like a reverse-domain identifier — it must be unique on the OS.
+# Windows uses it for the registry entry. macOS uses it for the bundle ID.
+# Linux uses it for the desktop entry.
+
+productName: "Electron Todo"
+# productName becomes the window title bar name, .app folder name on macOS,
+# the installer EXE name on Windows, and the AppImage filename on Linux.
+
+copyright: "Copyright (c) 2026 Samvyo Technologies"
+
+# ─── What files to include in the package ────────────────────────────────────
+# electron-builder bundles only these paths — everything else is excluded.
+# This keeps the installer lean (no node_modules source, no test files, etc.)
+files:
+  - dist/**/*        # React production build (output of `vite build`)
+  - electron/**/*    # Main process files (main.js, preload.js, menu.js, tray.js)
+  - package.json     # Needed at runtime — electron-updater reads version from it
+
+directories:
+  output: release          # packaged installers go here
+  buildResources: assets   # electron-builder looks here for icons by default
+
+# ─── Linux ───────────────────────────────────────────────────────────────────
+linux:
+  target:
+    - AppImage   # single executable file — no install needed, runs anywhere
+    - deb        # Debian/Ubuntu package — installs via dpkg/apt
+  icon: assets/icons/png   # folder of PNGs at standard sizes (16×16 up to 1024×1024)
+  category: Utility        # desktop category shown in app launchers
+
+# ─── Windows ─────────────────────────────────────────────────────────────────
+win:
+  target:
+    - nsis       # NSIS installer — the standard Windows .exe setup wizard
+    - portable   # portable .exe — runs without installing (useful for USB sticks)
+  icon: assets/icons/win/icon.ico
+
+nsis:
+  # oneClick: false → shows the install wizard (lets user choose install path)
+  # oneClick: true  → silent install to default path (faster but less user control)
+  oneClick: false
+  perMachine: false              # install for current user only (no admin rights needed)
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+# ─── macOS ───────────────────────────────────────────────────────────────────
+mac:
+  target:
+    - dmg   # disk image — user drags app to Applications folder
+    - zip   # zip of .app — needed by electron-updater to deliver macOS updates
+  icon: assets/icons/mac/icon.icns
+  category: public.app-category.productivity
+
+  # hardenedRuntime: true is required for notarization (Apple's security scan).
+  # We're not notarizing yet (no paid cert) but it's correct to have it here
+  # so we're ready when the team gets a certificate.
+  hardenedRuntime: true
+
+  # These entitlement files declare what OS capabilities our app needs.
+  # Apple's notarization server checks that the app only uses what it declared.
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+# ─── Auto-update feed ────────────────────────────────────────────────────────
+# publish tells electron-builder where to upload release artifacts AND
+# where electron-updater checks for new versions at runtime.
+#
+# provider: github → uses GitHub Releases (free, public repos)
+# electron-builder uploads:  .AppImage, .deb, .exe, .dmg, latest.yml
+# electron-updater downloads: latest.yml to check version, then the installer
+publish:
+  provider: github
+  releaseType: release
+  # owner and repo are inferred from package.json "repository" field
+  # (we'll add that field when we create the GitHub repo in Day 5)

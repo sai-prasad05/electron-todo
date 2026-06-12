@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  entitlements.mac.plist — macOS sandbox entitlements for notarization.
+
+  WHAT THIS IS:
+  When you submit a macOS app to Apple for notarization (their security scan),
+  you declare exactly which OS capabilities your app needs. Apple checks that
+  the app's actual behavior matches this list.
+
+  WHY WE NEED IT:
+  electron-builder's mac config references this file. Without it, the build
+  fails on macOS CI. We include camera/mic for the day when this pattern
+  is used in Samvyo's video conferencing app.
+
+  FOR FREE/UNSIGNED BUILDS:
+  We're not notarizing yet (no paid Apple Developer account needed for team use).
+  This file is still required — electron-builder reads it. Users on macOS will
+  right-click → Open to bypass Gatekeeper the first time.
+-->
+<plist version="1.0">
+<dict>
+  <!-- Allow JIT compilation — Electron's V8 JavaScript engine requires this -->
+  <key>com.apple.security.cs.allow-jit</key><true/>
+
+  <!-- Allow unsigned executable memory — needed for some Electron internals -->
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/>
+
+  <!-- Camera — for Samvyo video conferencing (not used in this todo demo) -->
+  <key>com.apple.security.device.camera</key><true/>
+
+  <!-- Microphone — for Samvyo video conferencing (not used in this todo demo) -->
+  <key>com.apple.security.device.audio-input</key><true/>
+</dict>
+</plist>
