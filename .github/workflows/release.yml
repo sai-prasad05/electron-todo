@@ -1,0 +1,89 @@
+# .github/workflows/release.yml — CI/CD pipeline for desktop app releases
+#
+# HOW THIS WORKS:
+#   1. You push a version tag: git tag v1.0.0 && git push origin v1.0.0
+#   2. GitHub sees a tag matching 'v*' and fires this workflow
+#   3. Three jobs run IN PARALLEL — one on Ubuntu, one on Windows, one on macOS
+#      (each platform's installer must be built on that platform's OS)
+#   4. Each job: installs Node, runs vite build, runs electron-builder
+#   5. electron-builder sees GH_TOKEN and --publish always → uploads to GitHub Releases
+#   6. After ~10-15 min, the Releases page has all installers attached
+#
+# REQUIRED SETUP (one-time, in browser):
+#   1. Create a Personal Access Token (classic) at:
+#      https://github.com/settings/tokens/new
+#      Scopes needed: repo (full control)
+#   2. Add it as a repo secret at:
+#      https://github.com/sai-prasad05/electron-todo/settings/secrets/actions
+#      Name: GH_TOKEN — paste the token as the value
+
+name: Release Desktop App
+
+on:
+  push:
+    # Only trigger when a tag like v1.0.0, v1.2.3, v2.0.0-beta is pushed
+    # NOT on every commit push — only explicit version releases
+    tags: ['v*']
+
+jobs:
+  release:
+    strategy:
+      # matrix: run this same job definition on 3 different OS environments
+      # GitHub spins up all 3 in parallel — total time = slowest single job (~10 min)
+      # NOT sequential — all 3 run at the same time
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # Step 1: Check out the tagged commit
+      # actions/checkout@v4 is a reusable action from the GitHub Actions marketplace
+      # It runs `git clone` + `git checkout <tag>` on the runner machine
+      - uses: actions/checkout@v4
+
+      # Step 2: Install Node.js 20 (LTS)
+      # cache: npm → caches node_modules between runs so npm ci is faster
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Step 3: Install dependencies from the lockfile
+      # `npm ci` = "clean install" — always uses exact versions from package-lock.json
+      # Unlike `npm install`, it never upgrades packages and always produces the same result
+      - run: npm ci
+
+      # Step 4: Build the React app with Vite
+      # Produces dist/ with index.html + bundled JS/CSS
+      # electron-builder then packages dist/ + electron/ into the final installer
+      - run: npm run build
+
+      # Step 5: Package and publish
+      # `npx electron-builder --publish always`:
+      #   - reads electron-builder.yml for platform config
+      #   - bundles dist/ + electron/ + Electron runtime into an installer
+      #   - uploads the installer to the GitHub Release for this tag
+      #
+      # Environment variables:
+      #   GH_TOKEN: the secret token that gives electron-builder write access to Releases
+      #   CSC_IDENTITY_AUTO_DISCOVERY: false → skips looking for a code-signing certificate
+      #     Without this, the build fails on macOS/Windows if no cert is found
+      #     For team/beta use, unsigned builds work fine (users bypass the warning once)
+      - name: Build & publish installers
+        run: npx electron-builder --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+          # ── Code signing (uncomment when you have certificates) ──────────
+          # macOS signing + notarization:
+          # CSC_LINK: ${{ secrets.MAC_CERT_P12_BASE64 }}
+          # CSC_KEY_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_PWD }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          #
+          # Windows signing:
+          # WIN_CSC_LINK: ${{ secrets.WIN_CERT_P12_BASE64 }}
+          # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASSWORD }}
